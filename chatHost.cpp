@@ -12,8 +12,8 @@ using boost::asio::ip::udp;
 
 class UDPSystem{
 private:
-std::vector<boost::asio::ip::udp::endpoint> clientes;
-std::vector<std::string> clienteDados;
+std::vector<udp::endpoint> clientes;
+std::vector<std::string> clientesDados;
 public:
 boost::asio::io_service io_service;
 udp::endpoint local_endpoint;
@@ -24,7 +24,7 @@ int clientesConectados;
 UDPSystem();
 void sendAllDataToAllClients();
 void receiveAndStoreDataAndClients();
-
+void sendOneDataToAllClients(std::string dadoEnviar);
 
 
 };
@@ -39,40 +39,87 @@ clientesConectados = 0;
 }
 
 void UDPSystem::receiveAndStoreDataAndClients(){
-char v[120];
-bool repetido = 0;
-std::cout << "A";
-my_socket.receive_from(boost::asio::buffer(v,120), // Local do buffer
-                      remote_endpoint); // Confs. do Cliente
-std::cout << "B";
-for(int n; n < clientes.size(); n++){
-  if(remote_endpoint == clientes[n]){
+
+  char v[6000];
+  std::string dado;
+  bool repetido = 0;
+
+
+    my_socket.receive_from(boost::asio::buffer(v,6000), // Local do buffer
+                        remote_endpoint); // Confs. do Cliente
+
+
+dado.assign(v, std::strlen(v) + 1);
+
+
+for(int n = 0; n < clientes.size(); n++){
+  if(remote_endpoint.address() == clientes[n].address() || dado == clientesDados[n]){
     repetido = 1;
+    clientesDados[n] = dado;
+    clientes[n] = remote_endpoint;
   }
 }
 
+
 if(!repetido){
+
   clientes.push_back(remote_endpoint);
+  std::cout << clientes[0] << "<y" << std::endl;
   clientesConectados++;
+  this->clientesDados.push_back(dado);
+  repetido = 0;
 }
+
+
 
 }
 
 void UDPSystem::sendAllDataToAllClients(){
 
+
+for(int n = 0; n < clientesDados.size(); n++){
+
+  for(int m = 0; m < clientes.size(); m++){
+    my_socket.send_to(boost::asio::buffer(clientesDados[n]), clientes[m]);
+  }
+
 }
 
+
+}
+
+void UDPSystem::sendOneDataToAllClients(std::string dadoEnviar){
+
+
+
+
+    for(int m = 0; m < clientes.size(); m++){
+      my_socket.send_to(boost::asio::buffer(dadoEnviar), clientes[m]);
+    }
+
+
+
+
+}
 
 
 int main(int argc, char* args[]){
 UDPSystem chat;
 
-std::cout << "Clientes:" << chat.clientesConectados << std::endl;
+for(int n = 0; n < 4; n++){
+  std::thread receive(&UDPSystem::receiveAndStoreDataAndClients, &chat);
+    receive.join();
+  std::thread send(&UDPSystem::sendAllDataToAllClients, &chat);
 
-chat.receiveAndStoreDataAndClients();
 
 
-std::cout << "Clientes:" << chat.clientesConectados << std::endl;
+
+send.join();
+
+
+}
+
+
 
 return 0;
 
