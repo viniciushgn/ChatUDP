@@ -20,14 +20,21 @@ udp::endpoint local_endpoint;
 udp::endpoint remote_endpoint;
 udp::socket my_socket;
 int clientesConectados;
+std::string dadosAtualizados;
+std::string meuDado;
 
 UDPSystem();
 void sendAllDataToAllClients();
 void receiveAndStoreDataAndClients();
 void sendOneDataToAllClients(std::string dadoEnviar);
-
+void atualizarMeuDado(std::string myData);
 
 };
+
+void UDPSystem::atualizarMeuDado(std::string myData){
+this->meuDado = myData;
+
+}
 
 UDPSystem::UDPSystem():local_endpoint(udp::v4(), 9001), remote_endpoint(udp::v4(), 0), my_socket(io_service){
 
@@ -70,6 +77,11 @@ if(!repetido){
   repetido = 0;
 }
 
+this->dadosAtualizados.clear();
+this->dadosAtualizados += this->meuDado;
+
+for (const auto &piece : this->clientesDados) this->dadosAtualizados += piece;
+
 
 
 }
@@ -106,10 +118,12 @@ void UDPSystem::sendOneDataToAllClients(std::string dadoEnviar){
 int main(int argc, char* args[]){
 UDPSystem chat;
 
+chat.atualizarMeuDado("KestoguP");
+
 for(int n = 0; n < 4; n++){
   std::thread receive(&UDPSystem::receiveAndStoreDataAndClients, &chat);
     receive.join();
-  std::thread send(&UDPSystem::sendAllDataToAllClients, &chat);
+  std::thread send(&UDPSystem::sendOneDataToAllClients, &chat, chat.dadosAtualizados );
 
 
 

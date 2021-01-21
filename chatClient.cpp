@@ -103,7 +103,7 @@ send.join();
 
 }
 
-std::cout << "n:" << chat.HostDados.size() << "DADOS:" << chat.HostDados[0] << std::endl;
+std::cout << "n:" << chat.HostDados.size() << "DADOS:" << chat.HostDados[1] << std::endl;
 
 return 0;
 
